@@ -22,9 +22,14 @@ if __name__ == "__main__":
         r = requests.get('https://api.opendota.com/api/matches/{}'.format(m['match_id']))
         match = r.json()
         picks_bans = match['picks_bans']
+        dire_team = match['dire_team']
+        radiant_team = match['radiant_team']
         df = df.append(picks_bans, ignore_index = True)
+        df = df.replace({"team" : {0:radiant_team['name'], 1:dire_team['name']}})
 
         # prevent request errors
         time.sleep(5)
         i += 1
     print('processed {} matches'.format(i))
+
+    df.to_csv("data/liquid_picks_bans.csv")
