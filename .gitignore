@@ -1,3 +1,4 @@
 data/*.json
 data/*.txt
+src/__pycache__
 .vscode/
