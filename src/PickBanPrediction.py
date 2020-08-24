@@ -27,8 +27,13 @@ if __name__ == "__main__":
     trainloader = torch.utils.data.DataLoader(
         train_tensor,
         batch_size=22,
-        shuffle=True,
+        shuffle=False,
         num_workers=2
     )
-    dataiter = iter(trainloader)
-    # data, target = dataiter.next()
+
+    for epoch in range(2):
+        loss = 0
+        for i, data in enumerate(trainloader,0):
+            inputs, targets = data
+            print(i)
+            # training code
