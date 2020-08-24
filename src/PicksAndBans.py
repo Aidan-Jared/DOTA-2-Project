@@ -17,10 +17,14 @@ def pull_picks_bans(matches, number = 100):
         r = requests.get('https://api.opendota.com/api/matches/{}'.format(m['match_id']))
         match = r.json()
         picks_bans = match['picks_bans']
+        if picks_bans == None:
+            continue
         dire_team = match['dire_team']
         radiant_team = match['radiant_team']
+        for j in picks_bans:
+            j['team_id'] = j['team']
         df = df.append(picks_bans, ignore_index = True)
-        df = df.replace({"team" : {0:radiant_team['name'], 1:dire_team['name']}})
+        df = df.replace({"team" : {0:radiant_team['name'], 1:dire_team['name']}, 'team_id' : {0:radiant_team['team_id'], 1: dire_team['team_id']}})
         print('processed {} matches'.format(i + 1))
 
         # prevent request errors
