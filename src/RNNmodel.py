@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 class RNN(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
@@ -9,6 +10,7 @@ class RNN(nn.Module):
         self.input_2_hidden = nn.Linear(input_size + hidden_size, hidden_size)
         self.input_2_output = nn.Linear(input_size + hidden_size, output_size)
         self.softmax = nn.LogSoftmax(dim=1)
+        #sigmoid activation layer
 
     def forward(self, input, hidden):
         # change to lstm or gru
@@ -16,6 +18,7 @@ class RNN(nn.Module):
         hidden = self.input_2_hidden(combined)
         output = self.input_2_output(combined)
         output = self.softmax(output)
+        output = F.sigmoid(output)
         return output, hidden
 
     def initHidden(self):

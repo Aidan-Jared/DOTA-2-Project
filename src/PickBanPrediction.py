@@ -48,8 +48,8 @@ if __name__ == "__main__":
     print_every = 1
 
     for epoch in range(epochs):
-        running_loss = 0
         for i, data in enumerate(trainloader,0):
+            running_loss = 0
             hidden = model.initHidden()
             optimizer.zero_grad()
             inputs, targets = data
@@ -57,9 +57,6 @@ if __name__ == "__main__":
             for j in range(inputs.size()[0]):
                 output, hidden = model(inputs[j], hidden)
                 loss = criterion(output, targets[j].unsqueeze(0))
-                loss.backward()
-                optimizer.step()
-
-                running_loss += loss.item()
-            if i % print_every == 0:
-                print(i, loss)
+                running_loss += loss
+            running_loss.backward()
+            optimizer.step()
