@@ -7,14 +7,16 @@ import pandas as pd
 import numpy as np
 from RNNmodel import RNN
 
-if __name__ == "__main__":
+def heroes_import(path):
     names = dict()
-    with open('data/heroes.json') as f:
+    with open(path) as f:
         data = json.load(f)
         for i in data:
             names[i["id"]] = i['localized_name'] # need to fix since length != highest key
-    # df_heroes = pd.DataFrame.from_dict(names, orient='index', columns=['name'])
-    df = pd.read_csv("data/liquid_picks_bans.csv")
+    return names
+
+def data_prep(path):
+    df = pd.read_csv(path)
     
     df['is_pick'] = df['is_pick'].astype(int)
     grouped = df.groupby('match_id')
@@ -22,11 +24,18 @@ if __name__ == "__main__":
     for i in grouped:
         i[1]['p_hero_id'] = i[1]['hero_id'].shift(1)
         i[1].fillna(0, inplace = True)
-        i[1]['p_hero_id'] = i[1]['p_hero_id'].astype(int)
+        i[1]['p_hero_id']= i[1]['p_hero_id'].astype(int)
         df_updated = df_updated.append(i[1], ignore_index = True)
+    return df_updated
 
-    train_target = torch.tensor(df_updated['hero_id'].values) - 1 # minus 1 is to move targets to 0 indexed start
-    train = torch.tensor(df_updated.drop(['Unnamed: 0', 'hero_id', 'ord', 'team', 'match_id'], axis=1).values)
+if __name__ == "__main__":
+
+    names = heroes_import('data/heroes.json')
+    df_train = data_prep("data/liquid_picks_bans.csv")
+
+    train_target = torch.tensor(df_train ['hero_id'].values) - 1 # minus 1 is to move targets to 0 indexed start
+    train = torch.tensor(df_train .drop(['Unnamed: 0', 'hero_id', 'ord', 'team', 'match_id'], axis=1).values)
+    
     train_tensor = torch.utils.data.TensorDataset(train, train_target)
     trainloader = torch.utils.data.DataLoader(
         train_tensor,
