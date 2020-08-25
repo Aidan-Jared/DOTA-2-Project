@@ -41,7 +41,7 @@ if __name__ == "__main__":
     model = RNN(input_size, hidden_size, output_size)
     
     
-    criterion = nn.NLLLoss()
+    criterion = nn.CrossEntropyLoss()
     learning_rate = .005
     optimizer = optim.SGD(model.parameters(), lr = learning_rate, momentum=.9)
     epochs = 2
