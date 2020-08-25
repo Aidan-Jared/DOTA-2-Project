@@ -53,6 +53,7 @@ if __name__ == "__main__":
             hidden = model.initHidden()
             optimizer.zero_grad()
             inputs, targets = data
+            # remove for loop
             for j in range(inputs.size()[0]):
                 output, hidden = model(inputs[j], hidden)
                 loss = criterion(output, targets[j].unsqueeze(0))

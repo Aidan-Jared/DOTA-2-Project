@@ -11,6 +11,7 @@ class RNN(nn.Module):
         self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, input, hidden):
+        # change to lstm or gru
         combined = torch.cat((input.view(1,-1), hidden), 1)
         hidden = self.input_2_hidden(combined)
         output = self.input_2_output(combined)
