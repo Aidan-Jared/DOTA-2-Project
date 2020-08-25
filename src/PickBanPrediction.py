@@ -22,11 +22,16 @@ def data_prep(path):
     grouped = df.groupby('match_id')
     df_updated = pd.DataFrame()
     for i in grouped:
+        i[1]['hero_id'] = i[1]['hero_id'] - 1
         i[1]['p_hero_id'] = i[1]['hero_id'].shift(1)
         i[1].fillna(0, inplace = True)
         i[1]['p_hero_id']= i[1]['p_hero_id'].astype(int)
         df_updated = df_updated.append(i[1], ignore_index = True)
     return df_updated
+
+# train function
+
+# eval function
 
 if __name__ == "__main__":
 
@@ -69,3 +74,4 @@ if __name__ == "__main__":
                 running_loss += loss
             running_loss.backward()
             optimizer.step()
+        # show loss
