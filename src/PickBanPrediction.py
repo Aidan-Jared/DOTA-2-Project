@@ -8,21 +8,27 @@ import numpy as np
 from RNNmodel import RNN
 
 def heroes_import(path):
-    names = dict()
+    names_api = dict()
+    names_model = dict()
+    names_2_index = dict()
     with open(path) as f:
         data = json.load(f)
-        for i in data:
-            names[i["id"]] = i['localized_name'] # need to fix since length != highest key
-    return names
+        for index, i in enumerate(data):
+            names_api[i["id"]] = i['localized_name']
+            names_model[index] = i['localized_name']
+            names_2_index[i['localized_name']] = index
+    return names_api, names_model, names_2_index
 
 def data_prep(path):
     df = pd.read_csv(path)
-    
+
     df['is_pick'] = df['is_pick'].astype(int)
+    df.replace({'hero_id' : names_api}, inplace = True)
+    df.replace({'hero_id' : names_2_index}, inplace = True)
     grouped = df.groupby('match_id')
     df_updated = pd.DataFrame()
     for i in grouped:
-        i[1]['hero_id'] = i[1]['hero_id'] - 1
+
         i[1]['p_hero_id'] = i[1]['hero_id'].shift(1)
         i[1].fillna(0, inplace = True)
         i[1]['p_hero_id']= i[1]['p_hero_id'].astype(int)
@@ -35,10 +41,10 @@ def data_prep(path):
 
 if __name__ == "__main__":
 
-    names = heroes_import('data/heroes.json')
+    names_api, names_model, names_2_index = heroes_import('data/heroes.json')
     df_train = data_prep("data/liquid_picks_bans.csv")
 
-    train_target = torch.tensor(df_train ['hero_id'].values) - 1 # minus 1 is to move targets to 0 indexed start
+    train_target = torch.tensor(df_train ['hero_id'].values)
     train = torch.tensor(df_train .drop(['Unnamed: 0', 'hero_id', 'ord', 'team', 'match_id'], axis=1).values)
     
     train_tensor = torch.utils.data.TensorDataset(train, train_target)
@@ -51,7 +57,7 @@ if __name__ == "__main__":
     
     input_size = train.size()[1]
     hidden_size = 55
-    output_size = max(names.keys()) # temp solution
+    output_size = len(names_model) # temp solution
     model = RNN(input_size, hidden_size, output_size)
     
     
@@ -74,4 +80,4 @@ if __name__ == "__main__":
                 running_loss += loss
             running_loss.backward()
             optimizer.step()
-        # show loss
+            print('[%d, %5d] loss: %.3f' %(epoch + 1, i + 1, running_loss.item() / 22))
