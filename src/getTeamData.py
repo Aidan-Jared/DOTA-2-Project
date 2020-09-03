@@ -90,12 +90,12 @@ def plotBalance(df, team):
         dict(
             type= 'line',
             yref= 'paper', y0=0, y1=1,
-            xref='x', x0=10/len(df_heroes), x1=10/len(df_heroes)
+            xref='x', x0=(10/len(df_heroes)) * 100, x1=(10/len(df_heroes)) * 100
         ),
         dict(
             type= 'line',
             yref= 'y', y0=0, y1=0,
-            xref='x', x0=0, x1=.3
+            xref='paper', x0=0, x1=1
         )
     ])
     fig.show()
@@ -119,5 +119,5 @@ if __name__ == "__main__":
     matches = getMatches(team)
 
     # rename df's
-    df_pb, df_win, df_winD = pullPicksBans(matches)
+    df_pb, df_win, df_winD = pullPicksBans(matches, 20)
     plotBalance(df_winD, team_name)
