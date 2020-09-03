@@ -2,6 +2,7 @@ import json
 import time
 import requests
 import pandas as pd
+import plotly.express as px
 
 def getTeam(team_name, teams):
     team = teams.loc[teams['name'] == team_name]
@@ -55,7 +56,7 @@ def windeltaPressence(df, df_win, team, heroes):
     df_win_loss = df_win_loss[df_win_loss['pressence'] > 0]
     return df_win_loss
 
-def pullPicksBans(matches, number = 5):
+def pullPicksBans(matches, number = 100):
     if type(matches) != list:
         matches = [matches]
     i = 0
@@ -82,6 +83,23 @@ def pullPicksBans(matches, number = 5):
     df_winD = windeltaPressence(df_pb, df_win, team_name, df_heroes)
     return df_pb, df_win, df_winD
 
+def plotBalance(df, team):
+    fig = px.scatter(df, x = 'pressence', y = 'win_delta', hover_data=['name'], size='ban_rate',
+                    title= 'Pressence vs Win Delta for {}'.format(team))
+    fig.update_layout(shapes=[
+        dict(
+            type= 'line',
+            yref= 'paper', y0=0, y1=1,
+            xref='x', x0=10/len(df_heroes), x1=10/len(df_heroes)
+        ),
+        dict(
+            type= 'line',
+            yref= 'y', y0=0, y1=0,
+            xref='x', x0=0, x1=.3
+        )
+    ])
+    fig.show()
+
 if __name__ == "__main__":
     names = dict()
     with open('data/heroes.json') as f:
@@ -100,4 +118,6 @@ if __name__ == "__main__":
     team = getTeam(team_name, df_teams)
     matches = getMatches(team)
 
+    # rename df's
     df_pb, df_win, df_winD = pullPicksBans(matches)
+    plotBalance(df_winD, team_name)
