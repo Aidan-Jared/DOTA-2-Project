@@ -35,21 +35,23 @@ def getWinner(match, df):
     df = df.append(win, ignore_index = True)
     return df
 
-def windeltaPressence(df_picks, df_win, team, heroes):
+def windeltaPressence(df, df_win, team, heroes):
     # merge win data frame with the picks for the match and isolate a team
-    df_picks_wins = df_picks.merge(df_win, how='left', left_on='match_id', right_on='match_id')
+    df_picks_wins = df.merge(df_win, how='left', left_on='match_id', right_on='match_id')
     df_team_picks = df_picks_wins[df_picks_wins['team'] == team]
 
     # get number of wins and losses
     team_loss = df_team_picks[df_team_picks.winner != team].hero_id.value_counts().rename('number_of_losses').to_frame()
     team_win = df_team_picks[df_team_picks.winner == team].hero_id.value_counts().rename('number_of_wins').to_frame()
+    df_bans = df[df['is_pick'] == False]['hero_id'].value_counts().rename('number_of_bans').to_frame()
 
-    # merge wins and losses to all the heroes in the game
-    df_win_loss = heroes.merge(team_loss, how='left', left_index=True, right_index=True).merge(team_win, how='left', left_index=True, right_index=True).fillna(0)
+    # merge wins, losses, and bans to all the heroes in the game
+    df_win_loss = heroes.merge(team_loss, how='left', left_index=True, right_index=True).merge(team_win, how='left', left_index=True, right_index=True).merge(df_bans, how='left', left_index=True, right_index=True).fillna(0)
 
-    # calculate win delta and pressence, remove characters that where never played
-    df_win_loss['win_delta'] = (df_win_loss['number_of_wins'] - df_win_loss['number_of_losses']) / len(df_win)
-    df_win_loss['pressence'] = (df_win_loss['number_of_wins'] + df_win_loss['number_of_losses']) / len(df_win)
+    # calculate win delta and pressence, remove characters that were never played
+    df_win_loss['win_delta'] = ((df_win_loss['number_of_wins'] - df_win_loss['number_of_losses']) / len(df_win)) * 100
+    df_win_loss['pressence'] = ((df_win_loss['number_of_wins'] + df_win_loss['number_of_losses']) / len(df_win)) * 100
+    df_win_loss['ban_rate'] = (df_win_loss['number_of_bans'] / len(df_win)) * 100
     df_win_loss = df_win_loss[df_win_loss['pressence'] > 0]
     return df_win_loss
 
@@ -98,5 +100,4 @@ if __name__ == "__main__":
     team = getTeam(team_name, df_teams)
     matches = getMatches(team)
 
-    df_matches = pullPicksBans(matches)
-    print('test')
+    df_pb, df_win, df_winD = pullPicksBans(matches)
