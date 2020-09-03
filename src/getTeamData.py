@@ -41,11 +41,11 @@ def windeltaPressence(df_picks, df_win, team, heroes):
     df_team_picks = df_picks_wins[df_picks_wins['team'] == team]
 
     # get number of wins and losses
-    team_loss = df_team_picks[df_team_picks.winner != team].hero_id.value_counts().rename('number_of_losses')
-    team_win = df_team_picks[df_team_picks.winner == team].hero_id.value_counts().rename('number_of_wins')
+    team_loss = df_team_picks[df_team_picks.winner != team].hero_id.value_counts().rename('number_of_losses').to_frame()
+    team_win = df_team_picks[df_team_picks.winner == team].hero_id.value_counts().rename('number_of_wins').to_frame()
 
     # merge wins and losses to all the heroes in the game
-    df_win_loss = heroes.merge(team_loss.to_frame(), how='left', left_on='name', right_index=True, ).merge(team_win.to_frame(), how='left', left_on='name', right_index=True).fillna(0)
+    df_win_loss = heroes.merge(team_loss, how='left', left_index=True, right_index=True).merge(team_win, how='left', left_index=True, right_index=True).fillna(0)
 
     # calculate win delta and pressence, remove characters that where never played
     df_win_loss['win_delta'] = (df_win_loss['number_of_wins'] - df_win_loss['number_of_losses']) / len(df_win)
