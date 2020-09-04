@@ -5,17 +5,29 @@ import pandas as pd
 import plotly.express as px
 
 def getTeam(team_name, teams):
-    team = teams.loc[teams['name'] == team_name]
+    if type(team_name) == list:
+        team = pd.DataFrame()
+        for i in team_name:
+            team = team.append(teams.loc[teams['name'] == i], ignore_index = True)
+    else:
+        team = teams.loc[teams['name'] == team_name]
     return team
 
 def getMatches(team):
-    r = requests.get('https://api.opendota.com/api/teams/{}/matches'.format(team['team_id'][0]))
-    matches = r.json()
+    if len(team) > 1:
+        matches = []
+        for i in team['team_id']:
+            r = requests.get('https://api.opendota.com/api/teams/{}/matches'.format(i))
+            matches.append(r.json())
+    else:
+        r = requests.get('https://api.opendota.com/api/teams/{}/matches'.format(team['team_id'][0]))
+        matches = r.json()
     return matches
 
 def getPickBans(match, df):
     picks_bans = match['picks_bans']
-    if picks_bans == None:
+    if picks_bans == None or picks_bans[0]['match_id'] in df:
+        # prevent duplicate matches and none types
         return df
     dire_team = match['dire_team']
     radiant_team = match['radiant_team']
@@ -27,6 +39,9 @@ def getPickBans(match, df):
 
 def getWinner(match, df):
     radiant_win = match['radiant_win']
+    if radiant_win == None or match['match_id'] in df:
+        # prevent duplicate matches and none types
+        return df
     dire_team = match['dire_team']
     radiant_team = match['radiant_team']
     if radiant_win == True:
@@ -39,7 +54,14 @@ def getWinner(match, df):
 def windeltaPressence(df, df_win, team, heroes):
     # merge win data frame with the picks for the match and isolate a team
     df_picks_wins = df.merge(df_win, how='left', left_on='match_id', right_on='match_id')
-    df_team_picks = df_picks_wins[df_picks_wins['team'] == team]
+    if type(team) == list:
+        df_team_picks = pd.DataFrame()
+        for i in team:
+            df_team_picks = df_team_picks.append(df_picks_wins.loc[df_picks_wins['team'] == i], ignore_index = True)
+    else:
+        df_team_picks = df_picks_wins[df_picks_wins['team'] == team]
+
+    # start working with this code
 
     # get number of wins and losses
     team_loss = df_team_picks[df_team_picks.winner != team].hero_id.value_counts().rename('number_of_losses').to_frame()
@@ -56,12 +78,8 @@ def windeltaPressence(df, df_win, team, heroes):
     df_win_loss = df_win_loss[df_win_loss['pressence'] > 0]
     return df_win_loss
 
-def pullPicksBans(matches, number = 100):
-    if type(matches) != list:
-        matches = [matches]
+def getMatch(matches, number, df_pb, df_win):
     i = 0
-    df_pb = pd.DataFrame()
-    df_win = pd.DataFrame()
     for m in matches:
         if i == number:
             # limmit number of matches read in
@@ -77,6 +95,18 @@ def pullPicksBans(matches, number = 100):
         # prevent request errors
         time.sleep(5)
         i += 1
+    return df_pb, df_win
+
+def pullPicksBans(matches, number = 100):
+    if type(matches) != list:
+        matches = [matches]
+    df_pb = pd.DataFrame()
+    df_win = pd.DataFrame()
+    if type(matches[0]) == list:
+        for i in matches:
+            df_pb, df_win = getMatch(i, number, df_pb, df_win)
+    else:
+        df_pb, df_win = getMatch(matches, number, df_pb, df_win)
     df_pb['hero_name'] = df_pb['hero_id']
     df_pb = df_pb.replace({'hero_name' : names})
     df_win['match_id'] = df_win['match_id'].astype('int64')
@@ -114,10 +144,11 @@ if __name__ == "__main__":
 
     df_teams = pd.DataFrame(teams)
 
-    team_name = "Team Secret"
+    team_name = ["Team Secret", "Team Liquid"]
+    # team_name = "Team Secret"
     team = getTeam(team_name, df_teams)
     matches = getMatches(team)
 
     # rename df's
-    df_pb, df_win, df_winD = pullPicksBans(matches, 20)
+    df_pb, df_win, df_winD = pullPicksBans(matches, 5)
     plotBalance(df_winD, team_name)
