@@ -56,17 +56,23 @@ def windeltaPressence(df, df_win, team, heroes):
     df_picks_wins = df.merge(df_win, how='left', left_on='match_id', right_on='match_id')
     if type(team) == list:
         df_team_picks = pd.DataFrame()
+        team_loss = pd.DataFrame()
+        team_win = pd.DataFrame()
+        df_bans = pd.DataFrame()
         for i in team:
+            # need to reset index and prevent overwriting of all data for team name
             df_team_picks = df_team_picks.append(df_picks_wins.loc[df_picks_wins['team'] == i], ignore_index = True)
+            team_loss = team_loss.append(df_team_picks[df_team_picks.winner != i].hero_id.value_counts().rename('number_of_losses').to_frame())
+            team_win = team_win.append(df_team_picks[df_team_picks.winner == i].hero_id.value_counts().rename('number_of_wins').to_frame())
+            df_bans = df_bans.append(df[df['is_pick'] == False]['hero_id'].value_counts().rename('number_of_bans').to_frame())
+            df_bans['team'] = i
     else:
+        # get number of wins and losses
         df_team_picks = df_picks_wins[df_picks_wins['team'] == team]
-
-    # start working with this code
-
-    # get number of wins and losses
-    team_loss = df_team_picks[df_team_picks.winner != team].hero_id.value_counts().rename('number_of_losses').to_frame()
-    team_win = df_team_picks[df_team_picks.winner == team].hero_id.value_counts().rename('number_of_wins').to_frame()
-    df_bans = df[df['is_pick'] == False]['hero_id'].value_counts().rename('number_of_bans').to_frame()
+        team_loss = df_team_picks[df_team_picks.winner != team].hero_id.value_counts().rename('number_of_losses').to_frame()
+        team_win = df_team_picks[df_team_picks.winner == team].hero_id.value_counts().rename('number_of_wins').to_frame()
+        df_bans = df[df['is_pick'] == False]['hero_id'].value_counts().rename('number_of_bans').to_frame()
+        df_bans['team'] = team
 
     # merge wins, losses, and bans to all the heroes in the game
     df_win_loss = heroes.merge(team_loss, how='left', left_index=True, right_index=True).merge(team_win, how='left', left_index=True, right_index=True).merge(df_bans, how='left', left_index=True, right_index=True).fillna(0)
@@ -114,7 +120,7 @@ def pullPicksBans(matches, number = 100):
     return df_pb, df_win, df_winD
 
 def plotBalance(df, team):
-    fig = px.scatter(df, x = 'pressence', y = 'win_delta', hover_data=['name'], size='ban_rate',
+    fig = px.scatter(df, x = 'pressence', y = 'win_delta', hover_data=['name'], size='ban_rate', color= 'team',
                     title= 'Pressence vs Win Delta for {}'.format(team))
     fig.update_layout(shapes=[
         dict(
