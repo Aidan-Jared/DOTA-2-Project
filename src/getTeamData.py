@@ -59,13 +59,21 @@ def windeltaPressence(df, df_win, team, heroes):
         team_loss = pd.DataFrame()
         team_win = pd.DataFrame()
         df_bans = pd.DataFrame()
+        df_win_loss = pd.DataFrame()
         for i in team:
             # need to reset index and prevent overwriting of all data for team name
             df_team_picks = df_team_picks.append(df_picks_wins.loc[df_picks_wins['team'] == i], ignore_index = True)
-            team_loss = team_loss.append(df_team_picks[df_team_picks.winner != i].hero_id.value_counts().rename('number_of_losses').to_frame())
-            team_win = team_win.append(df_team_picks[df_team_picks.winner == i].hero_id.value_counts().rename('number_of_wins').to_frame())
-            df_bans = df_bans.append(df[df['is_pick'] == False]['hero_id'].value_counts().rename('number_of_bans').to_frame())
-            df_bans['team'] = i
+            team_loss = team_loss.append(df_team_picks[df_team_picks.winner != i].hero_id.value_counts().to_frame('number_of_losses'))
+            team_win = team_win.append(df_team_picks[df_team_picks.winner == i].hero_id.value_counts().to_frame('number_of_wins'))
+            temp = df[df['is_pick'] == False]['hero_id'].value_counts().to_frame('number_of_bans')
+            temp['team'] = i
+            df_bans = df_bans.append(temp)
+            temp = heroes.merge(team_loss, how='left', left_index=True, right_index=True).merge(team_win, how='left', left_index=True, right_index=True).merge(df_bans, how='left', left_index=True, right_index=True).fillna(0)
+            temp['win_delta'] = ((temp['number_of_wins'] - temp['number_of_losses']) / len(df_win)) * 100
+            temp['pressence'] = ((temp['number_of_wins'] + temp['number_of_losses']) / len(df_win)) * 100
+            temp['ban_rate'] = (temp['number_of_bans'] / len(df_win)) * 100
+            temp = temp[temp['pressence'] > 0]
+            df_win_loss = df_win_loss.append(temp)
     else:
         # get number of wins and losses
         df_team_picks = df_picks_wins[df_picks_wins['team'] == team]
@@ -74,14 +82,14 @@ def windeltaPressence(df, df_win, team, heroes):
         df_bans = df[df['is_pick'] == False]['hero_id'].value_counts().rename('number_of_bans').to_frame()
         df_bans['team'] = team
 
-    # merge wins, losses, and bans to all the heroes in the game
-    df_win_loss = heroes.merge(team_loss, how='left', left_index=True, right_index=True).merge(team_win, how='left', left_index=True, right_index=True).merge(df_bans, how='left', left_index=True, right_index=True).fillna(0)
+        # merge wins, losses, and bans to all the heroes in the game
+        df_win_loss = heroes.merge(team_loss, how='left', left_index=True, right_index=True).merge(team_win, how='left', left_index=True, right_index=True).merge(df_bans, how='left', left_index=True, right_index=True).fillna(0)
 
-    # calculate win delta and pressence, remove characters that were never played
-    df_win_loss['win_delta'] = ((df_win_loss['number_of_wins'] - df_win_loss['number_of_losses']) / len(df_win)) * 100
-    df_win_loss['pressence'] = ((df_win_loss['number_of_wins'] + df_win_loss['number_of_losses']) / len(df_win)) * 100
-    df_win_loss['ban_rate'] = (df_win_loss['number_of_bans'] / len(df_win)) * 100
-    df_win_loss = df_win_loss[df_win_loss['pressence'] > 0]
+        # calculate win delta and pressence, remove characters that were never played
+        df_win_loss['win_delta'] = ((df_win_loss['number_of_wins'] - df_win_loss['number_of_losses']) / len(df_win)) * 100
+        df_win_loss['pressence'] = ((df_win_loss['number_of_wins'] + df_win_loss['number_of_losses']) / len(df_win)) * 100
+        df_win_loss['ban_rate'] = (df_win_loss['number_of_bans'] / len(df_win)) * 100
+        df_win_loss = df_win_loss[df_win_loss['pressence'] > 0]
     return df_win_loss
 
 def getMatch(matches, number, df_pb, df_win):
