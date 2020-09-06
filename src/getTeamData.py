@@ -153,11 +153,11 @@ if __name__ == "__main__":
 
     df_teams = pd.DataFrame(teams)
 
-    team_name = ["Team Secret", "Team Liquid"]
+    team_name = ["Team Secret", "Team Liquid", "Vici Gaming", "OG"]
     # team_name = "Team Secret"
     team = getTeam(team_name, df_teams)
     matches = getMatches(team)
 
     # rename df's
-    df_pb, df_win, df_winD = pullPicksBans(matches,5)
+    df_pb, df_win, df_winD = pullPicksBans(matches)
     plotBalance(df_winD, team_name)
